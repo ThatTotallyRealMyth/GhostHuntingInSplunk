@@ -33,13 +33,25 @@ index=* source="*Sysmon*" EventCode=8
      TargetImage="*\\winlogon.exe" OR
      TargetImage="*\\services.exe")
     SourceUser!="NT AUTHORITY\\SYSTEM"
-| table _time, Computer, SourceImage, TargetImage, SourceUser, TargetUserPrivilege Escalation Pattern Detectionsplindex=* source="*Sysmon*" EventCode=1
+| table _time, Computer, SourceImage, TargetImage, SourceUser, TargetUser
+```
+
+This one allows us to detect potential uses with default SeImpersonatePrivlidges preforming what may be priv esc via a potatoe based exploit
+
+```sql
+index=* source="*Sysmon*" EventCode=1
 | eval PrevIntegrity = [search index=* source="*Sysmon*" EventCode=1 
     Computer=Computer ProcessId=ParentProcessId earliest=-1h 
     | head 1 | return $IntegrityLevel]
 | where IntegrityLevel="System" AND PrevIntegrity!="System"
 | where User IN ("IIS APPPOOL\\*", "NT AUTHORITY\\IUSR", "NT AUTHORITY\\NETWORK SERVICE", "NT AUTHORITY\\LOCAL SERVICE")
-| table _time, Computer, User, Image, ParentImage, CommandLine, IntegrityLevel, PrevIntegrityNamed Pipe Detection (Common in Potato Exploits)splindex=* source="*Sysmon*" 
+| table _time, Computer, User, Image, ParentImage, CommandLine, IntegrityLevel, PrevIntegrity
+```
+
+Finally this query qill allow us to detect any funny bussiness occuring over common Named pipes used by potateo exploits:
+
+```sql
+index=* source="*Sysmon*" 
     (EventCode=17 OR EventCode=18)
     (PipeName="\\*\\pipe\\spoolss" OR 
      PipeName="\\*\\pipe\\netsvcs" OR
@@ -48,3 +60,4 @@ index=* source="*Sysmon*" EventCode=8
      PipeName="\\*\\pipe\\samr")
     Image!="*\\System32\\*"
 | table _time, Computer, EventCode, PipeName, Image, User
+```
