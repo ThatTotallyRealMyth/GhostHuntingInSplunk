@@ -64,3 +64,12 @@ index=* source="*WinEventLog:Microsoft-Windows-Sysmon/Operational*" EventCode=1
 | table _time, Computer, User, CommandLine, ParentImage, ParentCommandLine, Image
 | rename Computer AS System, User AS Creator
 ```
+
+We could also create a more broader search where we look for ALL sechudled tasks being created. The issue with this is that it would create a lot of noise as windows creates, modifies and deletes task fairly regularly
+
+```sql
+index=* source="WinEventLog:Security" EventCode=4698
+| table _time, Computer, Account_Name, Task_Name, Task_Content
+```
+
+There are also other things we can pick up, 
