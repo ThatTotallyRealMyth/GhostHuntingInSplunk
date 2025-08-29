@@ -161,7 +161,6 @@ Feel free to customize this based on your environment and what you find most use
 
 These queries next are OSTH/OSIR specific and more so aimed at answering the questions or helping you answer the questions in the labs/exams. 
 
-Excellent compilation for OSTH/OSIR labs! Let me help you organize and enhance these queries with some context and improvements:
 
 # OSTH/OSIR Lab Hunt Queries
 
