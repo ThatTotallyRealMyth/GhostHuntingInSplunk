@@ -1,3 +1,12 @@
+Lets say we wanted to create a base of mapping out everyones movement and to where, we can use this query as a sort of birds eye view to allow us to then build towards filtering and cutting down noise until we can get higher fidality look:
+
+```sql
+index=* SourceIp=* OR DestinationIp=* OR SourceHostname=* OR DestinationHostname=*
+| stats count by SourceIp, SourceHostname, DestinationIp, DestinationHostname
+| sort -count
+```
+
+
 We can query for all network connections given by a specific username via: 
 
 ```sql
