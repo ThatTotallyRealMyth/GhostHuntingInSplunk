@@ -25,3 +25,26 @@ index=* source="*Sysmon*" EventCode=1
 | table _time, Computer, User, Image, CommandLine, ParentImage, Signed, Hashes
 | dedup Image
 ```
+The next set of queries are focused around detecting the abuse of potatoe classes of exploits. Note that these queries likely have signifcant issues and may produce false positives however I hope that they provide a base in which one could then build on them to make them more effective:
+
+```sql
+index=* source="*Sysmon*" EventCode=8
+    (TargetImage="*\\lsass.exe" OR 
+     TargetImage="*\\winlogon.exe" OR
+     TargetImage="*\\services.exe")
+    SourceUser!="NT AUTHORITY\\SYSTEM"
+| table _time, Computer, SourceImage, TargetImage, SourceUser, TargetUserPrivilege Escalation Pattern Detectionsplindex=* source="*Sysmon*" EventCode=1
+| eval PrevIntegrity = [search index=* source="*Sysmon*" EventCode=1 
+    Computer=Computer ProcessId=ParentProcessId earliest=-1h 
+    | head 1 | return $IntegrityLevel]
+| where IntegrityLevel="System" AND PrevIntegrity!="System"
+| where User IN ("IIS APPPOOL\\*", "NT AUTHORITY\\IUSR", "NT AUTHORITY\\NETWORK SERVICE", "NT AUTHORITY\\LOCAL SERVICE")
+| table _time, Computer, User, Image, ParentImage, CommandLine, IntegrityLevel, PrevIntegrityNamed Pipe Detection (Common in Potato Exploits)splindex=* source="*Sysmon*" 
+    (EventCode=17 OR EventCode=18)
+    (PipeName="\\*\\pipe\\spoolss" OR 
+     PipeName="\\*\\pipe\\netsvcs" OR
+     PipeName="\\*\\pipe\\efsrpc" OR
+     PipeName="\\*\\pipe\\lsarpc" OR
+     PipeName="\\*\\pipe\\samr")
+    Image!="*\\System32\\*"
+| table _time, Computer, EventCode, PipeName, Image, User
