@@ -4,7 +4,7 @@ To get all executables run on all systems that are not by Microsoft or google or
 index=* source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 | where NOT match(Company, "(?i)(Microsoft|Google|VMware)") | table _time, Image, Company, CommandLine, User | sort -_time
 ```
 
-This is insanely high fidelity as it really fucking filters out the bloody noise in the environment
+This is insanely high fidelity as it really filters out the bloody noise in the environment. The powerful thing is you can keep adding case insitive names of companies/signers as per your enviroment to consistently reduce the noise 
 
 
 Lets say we want to hunt for stuff related to hunting for scripts execution and the likes or macros etc etc 
