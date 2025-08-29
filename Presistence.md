@@ -72,4 +72,30 @@ index=* source="WinEventLog:Security" EventCode=4698
 | table _time, Computer, Account_Name, Task_Name, Task_Content
 ```
 
-There are also other things we can pick up, 
+There are also other things we can pick up such as the modification of the windows registry among other things. This query can be a bit hit or miss and you are invited to modify it much further to filter things out
+
+```sql
+index=* 
+(
+    /* Scheduled Tasks */
+    (source="WinEventLog:Security" EventCode=4698)
+    OR
+    /* Services */
+    (source="WinEventLog:System" EventCode=7045)
+    OR
+    /* Registry Keys (Sysmon) */
+    (source="*Sysmon*" EventCode=13 
+        TargetObject="*\\CurrentVersion\\Run*")
+    OR
+    /* Startup Folder (Sysmon) */
+    (source="*Sysmon*" EventCode=11
+        TargetFilename="*\\Startup\\*")
+)
+| eval PersistenceType=case(
+    EventCode=4698, "Scheduled Task",
+    EventCode=7045, "Service",
+    EventCode=13, "Registry",
+    EventCode=11, "Startup Folder"
+)
+| table _time, Computer, PersistenceType, Task_Name, Service_Name, TargetObject, TargetFilename
+```
