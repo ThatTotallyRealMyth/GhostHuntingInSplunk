@@ -145,6 +145,7 @@ index=* (CommandLine="*-enc*" OR CommandLine="*-e *" OR CommandLine="*base64*")
 3. **Wildcards are your friend**: `*` matches anything
 4. **Case matters sometimes**: Use `(?i)` for case-insensitive regex when needed
 5. **Check what fields exist**: Run search then look at "Interesting Fields" on the left
+6. **Hunt for IoCs broadly**: For example if you pick up the threat actors used IP then you can use `index=* "*192.168.10.10*"` and see if you pick up other broad stroke activity related to this
 
 ## Essential Fields to Remember
 - **_time** - When it happened
