@@ -99,3 +99,50 @@ index=*
 )
 | table _time, Computer, PersistenceType, Task_Name, Service_Name, TargetObject, TargetFilename
 ```
+This one is a lil more tricky as I had to muster up all my knowledge from other certifications and online readings(as well as plagerisin from the Sigma repository). Note that there are over 50 known locations in which threat actors can presist in the windows registry and add to that further is the fact that many more are unknown or being discovered everyday. 
+
+This query should cover your avg/typical TA activity but very well may miss a slightly advanced/motivated actor
+
+```sql
+index=* (Image="*reg.exe" OR process_name="reg.exe" OR ProcessName="reg.exe") 
+(CommandLine="*add*" OR command_line="*add*") 
+(
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\Run*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\RunServices*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\RunServicesOnce*" OR
+    CommandLine="*\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Run*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Shell*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Userinit*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options*" OR
+    CommandLine="*\\SYSTEM\\CurrentControlSet\\Services*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ShellExecuteHooks*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\AppInit_DLLs*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Notify*" OR
+    CommandLine="*\\Software\\Microsoft\\Active Setup\\Installed Components*" OR
+    CommandLine="*\\Software\\Classes\\*\\shell\\open\\command*" OR
+    CommandLine="*\\Software\\Classes\\exefile\\shell\\open\\command*" OR
+    CommandLine="*\\Software\\Classes\\htmlfile\\shell\\open\\command*" OR
+    CommandLine="*\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths*" OR
+    CommandLine="*\\System\\CurrentControlSet\\Control\\Session Manager\\BootExecute*" OR
+    CommandLine="*\\Software\\Microsoft\\Command Processor\\AutoRun*" OR
+    CommandLine="*\\Environment\\UserInitMprLogonScript*" OR
+    CommandLine="*\\Software\\Policies\\Microsoft\\Windows\\System\\Scripts*"
+)
+| eval persistence_type=case(
+    match(CommandLine, ".*\\\\Run.*"), "Startup Registry Keys",
+    match(CommandLine, ".*\\\\Services.*"), "Service Creation",
+    match(CommandLine, ".*Image File Execution Options.*"), "IFEO Hijacking", 
+    match(CommandLine, ".*Winlogon.*"), "Winlogon Helper DLL",
+    match(CommandLine, ".*Browser Helper Objects.*"), "Browser Helper Object",
+    match(CommandLine, ".*AppInit_DLLs.*"), "AppInit DLL",
+    match(CommandLine, ".*shell\\\\open\\\\command.*"), "File Association Hijacking",
+    match(CommandLine, ".*BootExecute.*"), "Boot Execute",
+    match(CommandLine, ".*AutoRun.*"), "Command Processor AutoRun",
+    match(CommandLine, ".*Scripts.*"), "Logon Scripts",
+    1=1, "Other Registry Persistence"
+)
+| table _time, Computer, User, CommandLine, persistence_type, ProcessId, ParentProcessName
+| sort -_time
+```
