@@ -160,6 +160,367 @@ index=* (CommandLine="*-enc*" OR CommandLine="*-e *" OR CommandLine="*base64*")
 
 Feel free to customize this based on your environment and what you find most useful depending on your context. 
 
+
+# Splunk Filtering and formating
+
+
+## The Pipe Operator - The Building Block of efffective use of splunk
+
+The pipe `|` operator is an incredible weapon of Splunk queries. Its an incredibly simple and easy way to reduce noise and filter out unwanted detials without needing to redo your entrie query and write queries from scratch. I suggest making full use of this to make template queries that are plug and play for you to best operate during your hunt.
+
+```splunk
+index=windows | head 10 | table User, Computer
+```
+**Translation:** 
+1. Get all events from the windows index
+2. Take only the first 10 events
+3. Display only the User and Computer fields
+
+**Key Concept:** Each pipe sends its output to the next command, like connecting LEGO blocks.
+
+---
+
+## Basic Filtering with WHERE
+
+The `where` command filters your results based on conditions. This is very useful when you know what youre looking for roughly, for exmaple you want to see all process creation events that are caused by a certain user, or on a certain host. You can add as many where statements as you like, making it very useful to use when you cast a wide net and want to cut down on the results
+
+### Simple Examples:
+
+**Filter by exact match:**
+```splunk
+index=windows | where User="Administrator"
+```
+
+**Filter by number comparison:**
+```splunk
+index=firewall | where bytes_sent > 1000000
+```
+
+**Filter using NOT (exclude results):**
+```splunk
+index=windows | where NOT User="SYSTEM"
+```
+
+**Filter with multiple conditions:**
+```splunk
+index=windows | where EventCode=4624 AND User!="SYSTEM"
+```
+
+### Advanced WHERE with Functions:
+
+**Using match() for pattern matching (regex):**
+```splunk
+index=windows | where match(Process, "powershell")
+```
+This finds any process containing "powershell"
+
+**Case-insensitive matching:**
+```splunk
+index=windows | where match(Process, "(?i)powershell")
+```
+The `(?i)` makes it case-insensitive (finds PowerShell, powershell, POWERSHELL, etc.)
+
+**Excluding multiple companies:**
+```splunk
+index=windows | where NOT match(Company, "(?i)(Microsoft|Google|Adobe)")
+```
+This excludes any events where Company contains Microsoft, Google, or Adobe (case-insensitive)
+
+---
+
+## Renaming Fields with AS
+
+The `as` operator renames fields to make them more readable. It's commonly used with stats commands.
+
+### Simple Examples:
+
+**Basic renaming:**
+```splunk
+index=windows | stats count as TotalEvents
+```
+
+**Renaming in stats operations:**
+```splunk
+index=windows 
+| stats count(User) as UniqueUsers, 
+        avg(Duration) as AverageDuration
+```
+
+**Using values() with as:**
+```splunk
+index=windows EventCode=4624
+| stats values(User) as LoggedInUsers, 
+        values(Computer) as Computers 
+        by SourceIP
+```
+This groups by SourceIP and shows all unique Users and Computers for each IP
+
+---
+
+## Sorting Results
+
+The `sort` command arranges your results. Use `-` for descending (highest first) and `+` for ascending (lowest first).
+
+### Examples:
+
+**Sort by single field (ascending):**
+```splunk
+index=windows | table User, EventCode | sort User
+```
+
+**Sort by single field (descending):**
+```splunk
+index=windows | table User, EventCode | sort -EventCode
+```
+
+**Sort by multiple fields:**
+```splunk
+index=windows | table User, _time, EventCode | sort User, -_time
+```
+This sorts by User alphabetically, then by time (newest first) within each user
+
+---
+
+## Common Data Manipulation Commands
+
+### 1. **table** - Choose which columns to display
+```splunk
+index=windows | table User, Computer, EventCode, _time
+```
+Shows only these 4 fields in your results
+
+### 2. **fields** - Include or exclude fields (more efficient than table)
+```splunk
+index=windows | fields User, Computer | fields - _raw
+```
+Includes User and Computer, excludes the _raw field
+
+### 3. **dedup** - Remove duplicate entries
+```splunk
+index=windows | dedup User
+```
+Keeps only the first occurrence of each unique User
+
+### 4. **eval** - Create or modify fields
+```splunk
+index=windows 
+| eval UserType=if(User="Administrator", "Admin", "Standard")
+```
+Creates a new field called UserType based on the User field
+
+### 5. **stats** - Aggregate data
+```splunk
+index=windows 
+| stats count by User
+```
+Counts events for each user
+
+**Common stats functions:**
+- `count` - Count events
+- `values()` - List all unique values
+- `min()` - Minimum value
+- `max()` - Maximum value
+- `avg()` - Average
+- `sum()` - Total
+
+### 6. **coalesce** - Use first non-null value
+```splunk
+index=windows 
+| eval Username=coalesce(User, AccountName, "Unknown")
+```
+Uses User if it exists, otherwise AccountName, otherwise "Unknown"
+
+---
+
+## Breaking Down a query that uses heavy sorting/filtering
+
+This query is meant to either bubble up payloads used for initial access into an enviroment or identiy laterl movement. It will show us files that created network connections that dont match the specified companeis. The search will only show unique values and so we wont be overwhelmed by output as it should never return more than 2-3 pages; making it very usefult to identify a wide range of threat actor activity:
+
+```splunk
+index=* source="WinEventLog:Microsoft-Windows-Sysmon/Operational" (EventCode=1 OR EventCode=3)
+| where NOT match(Company, "(?i)(Microsoft|Google|VMware)")
+| eval ProcessGuid=coalesce(ProcessGuid, ProcessGuid)
+| stats values(Image) as Process, 
+        values(CommandLine) as CommandLine,
+        values(Company) as Company,
+        values(User) as User,
+        values(DestinationIp) as DestIP,
+        values(DestinationPort) as DestPort,
+        values(DestinationHostname) as DestHost,
+        values(SourceIp) as SourceIP,
+        values(SourcePort) as SourcePort,
+        min(_time) as ProcessStart,
+        values(EventCode) as EventCodes 
+        by ProcessGuid
+| where EventCodes="1" AND EventCodes="3"
+| table ProcessStart, Process, User, CommandLine, SourceIP, DestIP, DestPort, DestHost, Company
+| sort -ProcessStart
+```
+
+### Step Breakdown:
+
+**Step 1: Initial Search**
+```splunk
+index=* source="WinEventLog:Microsoft-Windows-Sysmon/Operational" (EventCode=1 OR EventCode=3)
+```
+- Searches all indexes
+- Looks for Sysmon logs
+- Gets EventCode 1 (Process Creation) OR EventCode 3 (Network Connection)
+
+**Step 2: Filter Out Known Companies**
+```splunk
+| where NOT match(Company, "(?i)(Microsoft|Google|VMware)")
+```
+- Excludes processes from Microsoft, Google, or VMware
+- Case-insensitive matching
+- Reduces noise. You can further had companies based on your enviroment and search to reduce the garbage that clutters your screen
+
+**Step 3: Ensure ProcessGuid Exists**
+```splunk
+| eval ProcessGuid=coalesce(ProcessGuid, ProcessGuid)
+```
+- Makes sure ProcessGuid field exists (handles null values)
+
+**Step 4: Group Events by Process**
+```splunk
+| stats values(Image) as Process, 
+        values(CommandLine) as CommandLine,
+        ...
+        by ProcessGuid
+```
+- Groups all events by ProcessGuid (unique process identifier)
+- `values()` collects all unique values for each field
+- Renames fields with `as` for clarity
+- `min(_time)` gets the earliest timestamp (when process started)
+
+**Step 5: Find Processes with Both Events**
+```splunk
+| where EventCodes="1" AND EventCodes="3"
+```
+- Filters to show ONLY processes that have BOTH:
+  - EventCode 1 (process was created)
+  - EventCode 3 (process made network connection)
+- This finds processes that started AND made network connections
+
+**Step 6: Format Output**
+```splunk
+| table ProcessStart, Process, User, CommandLine, SourceIP, DestIP, DestPort, DestHost, Company
+```
+- Displays only the relevant fields in a specific order
+
+**Step 7: Sort by Time**
+```splunk
+| sort -ProcessStart
+```
+- Shows newest processes first (descending order)
+
+### What This Query Actually Does:
+This query hunts for potentially suspicious processes by finding programs that:
+1. Were executed (EventCode 1)
+2. Made network connections (EventCode 3)
+3. Are NOT from trusted companies (Microsoft, Google, VMware)
+4. Shows them in chronological order with network details
+
+---
+
+## Developing Examples
+
+Start with these simple queries and build up:
+
+### Lv 1:
+```splunk
+# Find all failed logins
+index=windows EventCode=4625 | table User, Computer, _time
+
+# Count events by user
+index=windows | stats count by User | sort -count
+
+# Find processes containing "cmd"
+index=windows | where match(Process, "cmd") | table Process, User
+```
+
+### Level 2:
+```splunk
+# Find users who logged in from multiple computers
+index=windows EventCode=4624
+| stats values(Computer) as Computers, 
+        dc(Computer) as ComputerCount 
+        by User
+| where ComputerCount > 1
+
+# Find processes and their network connections
+index=sysmon (EventCode=1 OR EventCode=3)
+| stats values(Image) as Process, 
+        values(DestinationIp) as Destinations 
+        by ProcessGuid
+| where isnotnull(Destinations)
+```
+
+The above lv2 is a good step up example to show how querying, tabling and filtering can allow you to go from an overwhelming number of events to being better able to actually pulll out the information you actually need. It will basiclaly: 
+
+- Finds users accessing multiple computers (We normally dont expect a user to access more than TWO computers at most)
+- EventCode 4624 = Successful Windows login
+- `values(Computer)` = Lists all unique computers that user accessed(this will allow you to reduce how much overwhleming output you get)
+- `dc(Computer)` = **d**istinct **c**ount - counts how many different computers
+- `by User` = Groups everything by username
+- Shows only users who logged into 2+ computers
+
+
+---
+
+The second part of the above query is showing us processes created and the network connections made by them. This can show you for exmaple of an attacker executed a meterepreter reverse shell that called out to their c2, you would be able to identify that event:
+- Correlates process creation with network connections
+- EventCode 1 = Process started, EventCode 3 = Network connection made
+- `ProcessGuid` = Unique ID that links a process to its network activity
+- `values(Image)` = The program name/path
+- `values(DestinationIp)` = All IPs this process connected to
+- `isnotnull(Destinations)` = Only shows processes that actually made connections
+
+
+### Lev 3:
+```splunk
+# Find rare processes making external connections
+index=sysmon EventCode=3 
+| where NOT match(DestinationIp, "^(10\.|172\.|192\.168\.)")
+| stats count by Image
+| where count < 5
+| sort count
+```
+
+The `stats` command performs calculations on your data and groups results - think of it like Excel's pivot table functionality. It can count events, find unique values, calculate averages, and aggregate data by specific fields using functions like `count`, `values()`, `sum()`, `avg()`, etc.
+
+
+The `count` function simply counts the number of events or occurrences - it's the most basic stats function. When used alone (`stats count`), it counts all events; when used with `by` (`stats count by User`), it counts events for each unique value in that field.
+
+In referece to our level 3 query; The stats count by Image command counts how many external network connections each unique process (Image) has made, creating a frequency table of network activity per program. By filtering for count < 5, we identify "rare" processes that only made a few external connections, which is suspicious because expected programs typically make many connections if they make any network connections, while we might expect a beacon payload or reverse shell might only connect to its c2 server a few times. 
+
+Note that the above may lead to false postivies by the aim is to show you the concepts of splunk, and how to use it to better filter, extract and pull out the information you are expecting
+
+---
+
+## Quick Reference
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `\|` | Pipe data to next command | `index=windows \| head 10` |
+| `where` | Filter results | `\| where User="admin"` |
+| `where NOT` | Exclude results | `\| where NOT User="SYSTEM"` |
+| `match()` | Pattern matching | `\| where match(field, "pattern")` |
+| `as` | Rename fields | `\| stats count as Total` |
+| `sort` | Order results | `\| sort -count, sort +_time, sort -_time` |
+| `table` | Display specific fields | `\| table User, Time, CommandLine, Image` |
+| `stats` | Aggregate data | `\| stats count by User` |
+| `values()` | Get unique values | `\| stats values(IP) by User` |
+| `eval` | Create/modify fields | `\| eval newfield=field1+field2` |
+| `coalesce()` | First non-empty/null value | `\| eval x=coalesce(a,b,c)` |
+
+---
+## Tips for making your own Querys
+
+1. **Start Simple:** Begin with basic search, then add one pipe at a time to observe what happens and better identify if/when a query you had has anything unintended
+2. **Test Each Step:** Run the query after adding each pipe to see the transformation and then filter. Dont focus on making the immediatly perfect query as you can instead cast a huge net and keep adding pipes to chop down and then get a feel for it all
+5. **Learn Common Patterns:** You can practically copy/paste most of your query as you will only need to modify a few different fields once you get comofortable with the process of it all 
+
 These queries next are OSTH/OSIR specific and more so aimed at answering the questions or helping you answer the questions in the labs/exams. 
 
 
