@@ -529,6 +529,15 @@ These queries next are OSTH/OSIR specific and more so aimed at answering the que
 
 # OSTH/OSIR Lab Hunt Queries
 
+Before that, some general exam applicable advice. For starters, take advantage of the threat intelligence report. As shown below; the first query you should run on exam day is the one listed below. You should not only hunt for the hashes they provide you, but also techniques as much as you can. 
+
+For example, the threat report may mention a group prefers using phising for intial access. Then you should use the queries and techniques shown in this repo to look for all macro enabled files that were executed in the provided period of compromise or looking at processes that were children of word excel etc and try to find powershell/cmd. Or if they state that the group is known to use winrar for data exfil then you should hunt for winrar and .rar file associated events. 
+
+The point is that before you begin "hunting" using anything you know or anything from this repo; you should first have broad stroke queries to look for things the threat report mentions. Once you have looked into those with good enough queries; chances are that you would have developed a pivot point. 
+
+This also works for if you decide to fire away before refering to the threat intel report but then eventually get stuck or run out of ideas. In which case the threat intel report is a really good way to refresh your mind and give you new ideas to look for. 
+
+No matter what you do; make sure that you have thoroughly referenced and hunted across the threat intel report, not just hashes but also any mentioned TTPs. 
 ## Hunt with IOCs (Indicators of Compromise)
 ```spl
 index="*" ("malicious.exe" OR
