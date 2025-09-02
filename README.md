@@ -5,9 +5,12 @@ as splunk is very powerful and you dont need to fully master the *query* languag
 
 ## Basic Search Structure
 ```spl
-index=* source="*Sysmon*" EventCode=1 "powershell"
+index=* source="*" EventCode=1 "powershell"
 ```
-This searches ALL indexes for Sysmon process creation events containing "powershell" anywhere in the event. You can also remove eventcode argument and the source and search for all events with "powershell"
+
+This searches ALL indexes for process creation events(which is what eventcode 1 is from sysmon) containing "powershell" anywhere in the event. You can also remove eventcode argument and the source and search for all events with "powershell"
+
+What I like to do with this is not specify the source, as often you wont need to unless you have ALOT of sources with coliding eventcodes(since they arent unique in windows). You can jump from specifing source to having a wildcard
 
 ## Wildcards and Text Matching
 ```spl
