@@ -1,6 +1,6 @@
-I built this repo as I went through the OffSec OSTH and OSIR certifications. I had learned a whole load about splunk and thought maybe I could share it with others too! Feel free to look at the different files with the relevant hunting queries. The following are also quick tips and references for you to have handy
-as splunk is very powerful and you dont need to fully master the *query* language to be able to filter, find and display useful information. 
+I built this repo as I went through the OffSec OSTH and OSIR certifications. The repos README takes you through different ways to use splunk, from simple to more advanced use cases; as well as providing as many references as possible for important fields and filter operators. 
 
+The first segments of the readme will take you through how to use splunk, exploring workflows and ways to get information and view it. The second segment goes over sorting and filtering methods; where i go through using commands like stat, WHERE operator, sort, and the | operator. Overall i hope that it acts as a handy reference for you as you go through using splunk and i will be sure to keep updating the repo/readme as i get more ideas, or develop more queries. 
 
 
 ## Basic Search Structure
