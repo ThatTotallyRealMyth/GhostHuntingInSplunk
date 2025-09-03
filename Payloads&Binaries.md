@@ -16,6 +16,37 @@ index=* source=*
 | sort -_time
 ```
 
+
+Something interesting I had great success doing in the OSTH/OSIR is using other CTFs like Cyber defenders etc and figuring out common repeating patterns for malware as well as 
+the fact that most malware I see irl but also in CTFs is renamed to match legitmate ones. To pick this up best we look for non microsoft signed executables or executables with microsoft/expected names 
+but not signed by microsoft. I had a whole long list of these that I made prior to the exam from other ctfs, like c:\Windows\Tasks\7z.exe|svchost.exe etc but to make it more repeatable and useable for others; i tried to create 
+this query:
+
+```sql
+index="*" (EventCode=1 OR EventCode=7)
+
+/* Look for executables in sus paths or with masqueraded names */
+((Image="*\\Windows\\Tasks\\*" OR Image="*\\Windows\\Temp\\*" OR Image="*\\Windows\\System32\\*" OR Image="*\\windws\\*")
+AND Image="*.exe")
+
+/* Filter for commonly masqueraded names or non-Microsoft executables */
+| where 
+    /* Common masqueraded process names in wrong locations */
+    (match(Image, "(?i)\\Windows\\Tasks\\(svchost|csrss|lsass|services|winlogon|explorer|rundll32|7z|chrome|firefox)\.exe") OR
+     match(Image, "(?i)\\Windows\\Temp\\(svchost|csrss|lsass|services|winlogon|explorer|rundll32|7z|chrome|firefox)\.exe") OR
+     match(Image, "(?i)\\windws\\") OR
+     /* System processes in wrong paths */
+     (match(lower(Image), "svchost\.exe") AND NOT match(Image, "(?i)C:\\Windows\\System32\\svchost\.exe|C:\\Windows\\SysWOW64\\svchost\.exe")) OR
+     (match(lower(Image), "csrss\.exe") AND NOT match(Image, "(?i)C:\\Windows\\System32\\csrss\.exe")) OR
+     (match(lower(Image), "lsass\.exe") AND NOT match(Image, "(?i)C:\\Windows\\System32\\lsass\.exe")) OR
+     /* Non-Microsoft executables in system directories */
+     (match(Image, "(?i)\\Windows\\(Tasks|Temp|System32)\\") AND NOT match(Company, "(?i)microsoft")))
+
+/* Display results */
+| table _time ComputerName User Image ParentImage CommandLine Company SignatureStatus
+| sort - _time
+
+```
 We can continue to add to this, for example looking for commandlines that include -Bypass, or IWR or IEX as well as hunting for .xlsx and .docm files and what not. This can introduce alot of false positives or not but 
 That is easy to address. It is just as easy to remove all non macro word documents in favor 
 
