@@ -85,7 +85,7 @@ index=* source="*Sysmon*" EventCode=1
 ### Focus on Suspicious Paths
 ```spl
 index=* source="*Sysmon*" EventCode=1
-    (Image="*\\Temp\\*" OR Image="*\\AppData\\*" OR Image="*\\Public\\*")
+    (Image="*\\Temp\\*" OR Image="*\\AppData\\*" OR Image="*\\Public\\*" OR Image="*\\Tasks\\*")
 ```
 
 ### Command Line Contains
