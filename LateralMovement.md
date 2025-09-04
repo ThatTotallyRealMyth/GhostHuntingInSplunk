@@ -11,7 +11,7 @@ We can query for all network connections given by a specific username via:
 
 ```sql
 index=* sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=3 
-User="*helpdesk_1*"
+User="*SomeUser*"
 | eval timestamp=strftime(_time, "%Y-%m-%d %H:%M:%S"),
        destination=if(isnotnull(DestinationHostname), DestinationHostname, DestinationIp),
        connection=destination.":".DestinationPort
