@@ -33,7 +33,7 @@ Lets say for a given username, we want to see all their activity conducted from 
 
 ```sql
 index=* sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 
-User="*helpdesk_1*"
+User="*someUser*"
 | eval timestamp=strftime(_time, "%Y-%m-%d %H:%M:%S"),
        process_name=mvindex(split(Image,"\\"),-1)
 | table timestamp Computer User process_name Image CommandLine ParentImage
