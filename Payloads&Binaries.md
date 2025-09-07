@@ -19,7 +19,7 @@ index=* source=*
 
 Something interesting I had great success doing in the OSTH/OSIR is using other CTFs like Cyber defenders etc and figuring out common repeating patterns for malware as well as 
 the fact that most malware I see irl but also in CTFs is renamed to match legitmate ones. To pick this up best we look for non microsoft signed executables or executables with microsoft/expected names 
-but not signed by microsoft. I had a whole long list of these that I made prior to the exam from other ctfs, like c:\Windows\Tasks\7z.exe|svchost.exe etc but to make it more repeatable and useable for others; i tried to create 
+but not signed by microsoft. I had a whole long list of these that I made prior to the exam from other ctfs, like c:\Windows\tasks|temp\<normal binary>.exe etc but to make it more repeatable and useable for others; i tried to create 
 this query:
 
 ```sql
