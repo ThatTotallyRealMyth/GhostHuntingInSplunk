@@ -47,19 +47,19 @@ index=* source="*Sysmon*" EventCode=1
 
 ### Network Connections
 ```spl
-index=* source="*Sysmon*" EventCode=3
+index=* source="*" EventCode=3
 | table _time, Computer, Image, User, DestinationIp, DestinationPort, DestinationHostname
 ```
 
 ### File Creation
 ```spl
-index=* source="*Sysmon*" EventCode=11
+index=* source="*" EventCode=11
 | table _time, Computer, Image, TargetFilename, CreationUtcTime
 ```
 
 ### Registry Modifications
 ```spl
-index=* source="*Sysmon*" EventCode=13
+index=* source="*" EventCode=13
 | table _time, Computer, Image, TargetObject, Details, EventType
 ```
 
@@ -100,7 +100,7 @@ index=* source="*Sysmon*" EventCode=1
 
 ### Process with Network Activity
 ```spl
-index=* source="*Sysmon*" EventCode=1 Image="*\\rundll32.exe"
+index=* source="*" EventCode=1 Image="*\\rundll32.exe"
 | join ProcessGuid 
     [search index=* source="*Sysmon*" EventCode=3]
 | table _time, Computer, Image, CommandLine, DestinationIp, DestinationPort
@@ -108,7 +108,7 @@ index=* source="*Sysmon*" EventCode=1 Image="*\\rundll32.exe"
 
 ### Parent-Child Relationships
 ```spl
-index=* source="*Sysmon*" EventCode=1 
+index=* source="*" EventCode=1 
     ParentImage="*\\explorer.exe" 
     Image!="*\\Windows\\*"
 | table _time, Computer, ParentImage, Image, CommandLine
@@ -172,7 +172,7 @@ Feel free to customize this based on your environment and what you find most use
 The pipe `|` operator is an incredible weapon of Splunk queries. Its an incredibly simple and easy way to reduce noise and filter out unwanted detials without needing to redo your entrie query and write queries from scratch. I suggest making full use of this to make template queries that are plug and play for you to best operate during your hunt.
 
 ```splunk
-index=windows | head 10 | table User, Computer
+index=* | head 10 | table User, Computer
 ```
 **Translation:** 
 1. Get all events from the windows index
@@ -191,41 +191,41 @@ The `where` command filters your results based on conditions. This is very usefu
 
 **Filter by exact match:**
 ```splunk
-index=windows | where User="Administrator"
+index=* | where User="Administrator"
 ```
 
 **Filter by number comparison:**
 ```splunk
-index=firewall | where bytes_sent > 1000000
+index=* | where bytes_sent > 1000000
 ```
 
 **Filter using NOT (exclude results):**
 ```splunk
-index=windows | where NOT User="SYSTEM"
+index=* | where NOT User="SYSTEM"
 ```
 
 **Filter with multiple conditions:**
 ```splunk
-index=windows | where EventCode=4624 AND User!="SYSTEM"
+index=* | where EventCode=4624 AND User!="SYSTEM"
 ```
 
 ### Advanced WHERE with Functions:
 
 **Using match() for pattern matching (regex):**
 ```splunk
-index=windows | where match(Process, "powershell")
+index=* | where match(Process, "powershell")
 ```
 This finds any process containing "powershell"
 
 **Case-insensitive matching:**
 ```splunk
-index=windows | where match(Process, "(?i)powershell")
+index=* | where match(Process, "(?i)powershell")
 ```
 The `(?i)` makes it case-insensitive (finds PowerShell, powershell, POWERSHELL, etc.)
 
 **Excluding multiple companies:**
 ```splunk
-index=windows | where NOT match(Company, "(?i)(Microsoft|Google|Adobe)")
+index=* | where NOT match(Company, "(?i)(Microsoft|Google|Adobe)")
 ```
 This excludes any events where Company contains Microsoft, Google, or Adobe (case-insensitive)
 
@@ -239,19 +239,19 @@ The `as` operator renames fields to make them more readable. It's commonly used 
 
 **Basic renaming:**
 ```splunk
-index=windows | stats count as TotalEvents
+index=* | stats count as TotalEvents
 ```
 
 **Renaming in stats operations:**
 ```splunk
-index=windows 
+index=* 
 | stats count(User) as UniqueUsers, 
         avg(Duration) as AverageDuration
 ```
 
 **Using values() with as:**
 ```splunk
-index=windows EventCode=4624
+index=* EventCode=4624
 | stats values(User) as LoggedInUsers, 
         values(Computer) as Computers 
         by SourceIP
@@ -268,17 +268,17 @@ The `sort` command arranges your results. Use `-` for descending (highest first)
 
 **Sort by single field (ascending):**
 ```splunk
-index=windows | table User, EventCode | sort User
+index=* | table User, EventCode | sort User
 ```
 
 **Sort by single field (descending):**
 ```splunk
-index=windows | table User, EventCode | sort -EventCode
+index=* | table User, EventCode | sort -EventCode
 ```
 
 **Sort by multiple fields:**
 ```splunk
-index=windows | table User, _time, EventCode | sort User, -_time
+index=* | table User, _time, EventCode | sort User, -_time
 ```
 This sorts by User alphabetically, then by time (newest first) within each user
 
@@ -286,15 +286,15 @@ This sorts by User alphabetically, then by time (newest first) within each user
 
 ## Common Data Manipulation Commands
 
-### 1. **table** - Choose which columns to display
+### 1. **table** - Choose which fields in a specific event to display in seperate coloums
 ```splunk
-index=windows | table User, Computer, EventCode, _time
+index=* | table User, Computer, EventCode, _time
 ```
 Shows only these 4 fields in your results
 
-### 2. **fields** - Include or exclude fields (more efficient than table)
+### 2. **fields** - Include or exclude fields
 ```splunk
-index=windows | fields User, Computer | fields - _raw
+index=* | fields User, Computer | fields - _raw
 ```
 Includes User and Computer, excludes the _raw field
 
