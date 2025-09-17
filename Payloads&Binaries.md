@@ -56,7 +56,7 @@ index=* source=*
 (Image="*\\mshta.exe" OR Image="*\\certutil.exe" OR Image="*\\wscript.exe" OR Image="*\\cscript.exe" OR Image="*\\powershell.exe" OR Image="*\\cmd.exe" OR 
 CommandLine="*\\mshta.exe*" OR CommandLine="*\\certutil.exe*" OR 
 CommandLine="*-decode*" OR CommandLine="*-urlcache*" OR CommandLine="*-Bypass*" OR CommandLine="*-EncodedCommand*" OR 
-CommandLine="*IEX*" OR CommandLine="*IWR*" OR CommandLine="*Invoke-WebRequest*" OR CommandLine="*Invoke-Expression*" OR CommandLine="*DownloadString*" OR CommandLine="*DownloadFile*" OR
+CommandLine="*IEX*" OR CommandLine="*IWR*" OR CommandLine="*Invoke-WebRequest*" OR CommandLine="*Invoke-Expression*" OR CommandLine="*IRM*" OR CommandLine="*-USEB*" OR CommandLine="*DownloadString*" OR CommandLine="*DownloadFile*" OR
 CommandLine="*.hta*" OR CommandLine="*.vbs*" OR CommandLine="*.vba*" OR CommandLine="*.doc*" OR CommandLine="*.docm*" OR CommandLine="*.docx*" OR CommandLine="*.xls*" OR CommandLine="*.xlsx*" OR CommandLine="*.xlsm*" OR CommandLine="*.ppt*" OR CommandLine="*.pptm*" OR 
 CommandLine="*.ps1*" OR CommandLine="*.bat*" OR CommandLine="*.cmd*" OR
 CommandLine="*FromBase64String*" OR CommandLine="*Net.WebClient*" OR CommandLine="*hidden*" OR CommandLine="*-nop*" OR CommandLine="*-w hidden*" OR CommandLine="*-noni*" OR CommandLine="*-ec*") NOT (CommandLine="*Restricted*" OR Image="C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe")
